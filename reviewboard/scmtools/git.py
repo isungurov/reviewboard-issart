@@ -14,6 +14,8 @@ except ImportError:
 
 from djblets.util.filesystem import is_exe_in_path
 
+from django.utils.translation import ugettext as _
+
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, \
