@@ -277,6 +277,15 @@ $.extend(RB.ReviewRequest.prototype, {
         });
     },
 
+    unpublish: function(options) {
+        options = $.extend(true, {}, options);
+
+        this._apiCall({
+            path: "/unpublish/",
+            success: options.success
+        });
+    },
+
     discardDraft: function(options) {
         options = $.extend(true, {}, options);
 

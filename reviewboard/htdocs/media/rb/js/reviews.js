@@ -1335,7 +1335,17 @@ $(document).ready(function() {
         }, 400);
     });
 
-    $("#btn-draft-publish").click(function() {
+    $("#unpublish-review-request-link").click(function() {
+        gReviewRequest.unpublish({
+            success: function() {
+                window.location = SITE_ROOT;
+            }
+        });
+
+        return false;
+    });
+
+    $("#btn-draft-publish, #publish-review-request-link").click(function() {
         /* Save all the fields if we need to. */
         gPublishing = true;
         var fields = $(".editable:inlineEditorDirty");
