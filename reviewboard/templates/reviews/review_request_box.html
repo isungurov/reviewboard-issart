@@ -21,14 +21,15 @@
    <col width="50%" />
   </colgroup>
   <tr>
+   <td class="label"><label for="repository">{% trans "Repository" %}:</label></td>
+   <td class="value"><span id="repository">{{review_request.repository}}</span></td>
    <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
    <td class="value"><a id="submitter" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
-   <td class="caption" colspan="2">{% trans "Reviewers" %}</td>
   </tr>
   <tr>
    <td class="label"><label for="branch">{% trans "Branch" %}:</label></td>
    <td class="value"><span id="branch" class="editable">{{review_request_details.branch|safe}}</span></td>
-   <td class="indented label"><label for="target_groups">{% trans "Groups" %}:</label></td>
+   <td class="label"><label for="target_groups">{% trans "Review groups" %}:</label></td>
    <td class="value"><span id="target_groups" class="editable">{% spaceless %}
 {%  for group in review_request_details.target_groups.all %}
 <a href="{% url group group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
@@ -44,18 +45,12 @@
 {%   endwith %}
 {%  endfor %}
 {% endspaceless %}</span></td>
-   <td class="indented label"><label for="target_people">{% trans "People" %}:</label></td>
+   <td class="indented label"><label for="target_people">{% trans "Reviewers" %}:</label></td>
    <td class="value"><span id="target_people" class="editable comma-editable">{% spaceless %}
 {%  for person in review_request_details.target_people.all %}
 <a href="{% url user person %}"{% if not person.is_active %} class="inactive"{% endif %}>{{person}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
 {% endspaceless %}</span></td>
-  </tr>
-  <tr>
-   <td class="label"><label for="changenum">{% trans "Change Number" %}:</label></td>
-   <td class="value"><span id="changenum">{{review_request.changenum}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
-   <td class="label"><label for="repository">{% trans "Repository" %}:</label></td>
-   <td class="value"><span id="repository">{{review_request.repository}}</span></td>
   </tr>
  </table>
  <div class="content">

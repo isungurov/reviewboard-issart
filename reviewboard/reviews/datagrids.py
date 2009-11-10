@@ -192,6 +192,14 @@ class PendingCountColumn(Column):
         return str(getattr(obj, self.field_name).filter(public=True,
                                                         status='P').count())
 
+class ReviewersColumn(Column):
+    def __init__(self, label=_("Reviewers"), *args, **kwargs):
+        Column.__init__(self, label=label, *kwargs, **kwargs)
+        self.shrink = True
+
+    def render_data(self, review_request):
+        reviewers = review_request.target_people.all()
+        return ','.join(str(p) for p in reviewers)
 
 class GroupMemberCountColumn(Column):
     """
@@ -241,7 +249,9 @@ class ReviewRequestDataGrid(DataGrid):
     summary      = SummaryColumn(expand=True, link=True, css_class="summary")
     submitter    = Column(_("Submitter"), db_field="submitter__username",
                           shrink=True, sortable=True, link=True)
-
+    bugs_closed  = Column(_("Bugs closed"), db_field="bugs_closed",
+                          shrink=True, sortable=True, link=False)
+    reviewers    = ReviewersColumn()
     repository   = Column(_("Repository"), db_field="repository__name",
                           shrink=True, sortable=True, link=False)
     time_added   = DateTimeColumn(_("Posted"),
