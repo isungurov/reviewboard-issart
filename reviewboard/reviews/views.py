@@ -34,12 +34,14 @@ from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
+from reviewboard.reviews.builders.apd import build_review_request
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
 from reviewboard.reviews.forms import NewReviewRequestForm, \
+                                      NewReviewRequestFromBranchForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        ReviewRequestDraft, Review, Group, \
@@ -80,6 +82,29 @@ def new_review_request(request,
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
         'fields': simplejson.dumps(form.field_mapping),
+    }))
+
+@login_required
+def new_review_request_from_branch(request,
+                template_name='reviews/new_review_request_from_branch.html'):
+    """
+    Displays a New Review Request form and handles the creation of a
+    review request based on infrormation taken from the branch.
+    """
+    if request.method == 'POST':
+        form = NewReviewRequestFromBranchForm(request.POST)
+
+        if form.is_valid():
+            review_request = form.create(request.user)
+
+            build_review_request(review_request)
+
+            return HttpResponseRedirect(review_request.get_absolute_url())
+    else:
+        form = NewReviewRequestFromBranchForm()
+
+    return render_to_response(template_name, RequestContext(request, {
+        'form': form,
     }))
 
 

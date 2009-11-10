@@ -4,7 +4,8 @@ urlpatterns = patterns('reviewboard.reviews.views',
     url(r'^$', 'all_review_requests', name="all-review-requests"),
 
     # Review request creation
-    url(r'^new/$', 'new_review_request', name="new-review-request"),
+#    url(r'^new/$', 'new_review_request', name="new-review-request"),
+    url(r'^new/$', 'new_review_request_from_branch', name="new-review-request"),
 
     # Review request detail
     url(r'^(?P<review_request_id>[0-9]+)/$', 'review_detail',

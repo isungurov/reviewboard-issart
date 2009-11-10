@@ -4,6 +4,7 @@ import sre_constants
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
@@ -51,6 +52,74 @@ class DefaultReviewerForm(forms.ModelForm):
 
     class Meta:
         model = DefaultReviewer
+
+
+class NewReviewRequestFromBranchForm(forms.Form):
+    """
+    A form that handles creation of new review requests based on some
+    branch.
+    """
+    repository = forms.ModelChoiceField(
+        label=_("Repository"),
+        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        empty_label=None,
+        required=True)
+
+#    branch = forms.ModelChoiceField(
+#        label=_("Branch"),
+#        empty_label=None,
+#        required=True)
+
+    branch = forms.CharField(
+        label=_("Branch"),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '35'}))
+
+    def create(self, user):
+        repository = self.cleaned_data['repository']
+        branch = self.cleaned_data['branch']
+
+        review_request = ReviewRequest.objects.create(user, repository)
+        review_request.branch = branch
+
+        diff_content = repository.get_scmtool().get_branch_diff(branch)
+        diff_file = SimpleUploadedFile("console", diff_content)
+
+        diff_form = UploadDiffForm(repository,
+        files={
+            'path': diff_file,
+        })
+        diff_form.full_clean()
+
+        class SavedError(Exception):
+            """Empty exception class for when we already saved the error info"""
+            pass
+
+        try:
+            diff_form.create(diff_file, None,
+                             review_request.diffset_history)
+            if 'path' in diff_form.errors:
+                self.errors['diff_path'] = diff_form.errors['path']
+                raise SavedError
+            elif 'base_diff_path' in diff_form.errors:
+                self.errors['base_diff_path'] = diff_form.errors['base_diff_path']
+                raise SavedError
+        except SavedError:
+            review_request.delete()
+            raise
+        except EmptyDiffError:
+            review_request.delete()
+            self.errors['diff_path'] = forms.util.ErrorList([
+                'No diff found.'])
+            raise
+        except Exception, e:
+            review_request.delete()
+            self.errors['diff_path'] = forms.util.ErrorList([e])
+            raise
+
+        review_request.add_default_reviewers()
+        review_request.save()
+        return review_request
 
 
 class NewReviewRequestForm(forms.Form):

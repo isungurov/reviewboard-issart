@@ -35,6 +35,25 @@ class Revision(object):
     def __repr__(self):
         return '<Revision: %s>' % self.name
 
+class Log:
+    revision = None
+    author = None
+    message = None
+    
+    def __init__(self, revision, author, message):
+        self.revision = revision
+        self.author = author
+        self.message = message
+
+    def __init__(self, fields):
+        for (name, value) in fields.iteritems():
+            setattr(self, name, value)
+
+    def __str__(self):
+        return '%s : %s\n%s' % (self.revision, self.author, self.message)
+
+    def __repr__(self):
+        return 'Log<rev: %s; author: %s; msg: %s>' % (self.revision, self.author, self.message)
 
 HEAD = Revision("HEAD")
 UNKNOWN = Revision('UNKNOWN')

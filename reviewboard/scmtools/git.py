@@ -17,7 +17,7 @@ from djblets.util.filesystem import is_exe_in_path
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
+from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, Log
 from reviewboard.scmtools.errors import FileNotFoundError, \
                                         RepositoryNotFoundError, \
                                         SCMError
@@ -72,6 +72,24 @@ class GitTool(SCMTool):
 
     def get_parser(self, data):
         return GitDiffParser(data)
+
+    def get_branch_diff(self, branch):
+        return self.client.diff('master', branch)
+
+    def get_branch_log(self, branch, limit=None):
+        content = self.client.log('master', branch, limit)
+        entries = content.split('@@@')[:-1]
+        p = self.client.log_pattern
+        
+        result = [Log(p.search(e).groupdict()) for e in entries]
+
+        return result
+
+    def get_filenames_in_branch(self, branch):
+        content = self.client.get_changed_filenames('master', branch)
+        result = ['/' + f for f in content.split('\n')]
+
+        return result
 
     @classmethod
     def check_repository(cls, path, username=None, password=None):
@@ -339,3 +357,63 @@ class GitClient(object):
                                      path)
 
         return "file://" + path
+
+    def diff(self, from_rev, to_rev):
+        p = subprocess.Popen(
+            ['git', '--git-dir=%s' % self.git_dir, 'diff',
+                '..'.join((str(from_rev), str(to_rev)))],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
+        )
+        contents = p.stdout.read()
+        errmsg = p.stderr.read()
+        failure = p.wait()
+
+        if failure:
+            raise SCMError(errmsg)
+
+        return contents
+
+    log_pattern = re.compile(
+            r'(?P<revision>[a-z0-9]{40})\n(?P<author>[\w ]+)\n(?P<message>.+)',
+            re.DOTALL)
+
+    def log(self, from_rev, to_rev, limit=None):
+        cmd = ['git', '--git-dir=%s' % self.git_dir, 'log',
+                '--pretty=format:"%H%n%an%n%s%b@@@"']
+        if limit:
+            cmd.append('-' + str(limit))
+
+        cmd.append('..'.join((str(from_rev), str(to_rev))))
+
+        p = subprocess.Popen(cmd,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
+        )
+        contents = p.stdout.read()
+        errmsg = p.stderr.read()
+        failure = p.wait()
+
+        if failure:
+            raise SCMError(errmsg)
+
+        return contents
+
+    def get_changed_filenames(self, from_rev, to_rev):
+        p = subprocess.Popen(
+            ['git', '--git-dir=%s' % self.git_dir, 'diff', '--name-only',
+                '..'.join((str(from_rev), str(to_rev)))],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
+        )
+        contents = p.stdout.read()
+        errmsg = p.stderr.read()
+        failure = p.wait()
+
+        if failure:
+            raise SCMError(errmsg)
+
+        return contents
