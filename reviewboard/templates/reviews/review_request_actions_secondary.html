@@ -1,12 +1,5 @@
 {% load djblets_utils %}
 {% load i18n %}
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-{%  if review_request.public %}
-  <li><a id="unpublish-review-request-link" href="#">{% trans "Unpublish" %}</a></li>
-{%  else %}
-  <li><a id="publish-review-request-link" href="#">{% trans "Publish" %}</a></li>
-{%  endif %}
-{% endifuserorperm %}
 {% ifuserorperm review_request.submitter "reviews.can_change_status" %}
 {%  if review_request.public %}
 {%    ifequal review_request.status 'P' %}

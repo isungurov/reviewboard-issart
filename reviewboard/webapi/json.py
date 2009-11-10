@@ -590,18 +590,6 @@ def review_request_publish(request, review_request_id):
     return WebAPIResponse(request)
 
 @webapi_login_required
-def review_request_unpublish(request, review_request_id):
-    try:
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
-        review_request.unpublish(request.user, quiet=False)
-    except ReviewRequest.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-    except PermissionError:
-        return HttpResponseForbidden()
-
-    return WebAPIResponse(request)
-
-@webapi_login_required
 def review_request_close(request, review_request_id, type):
     type_map = {
         'submitted': ReviewRequest.SUBMITTED,

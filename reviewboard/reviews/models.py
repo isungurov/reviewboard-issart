@@ -521,20 +521,6 @@ class ReviewRequest(models.Model):
                                       review_request=self,
                                       changedesc=changes)
 
-    def unpublish(self, user, quiet=True):
-        """
-        Makes this review request non public. Send out the associated email.
-        """
-        if not self.is_mutable_by(user):
-            raise PermissionError
-
-        self.public = False
-        self.save()
-
-#        review_request_published.send(sender=self.__class__, user=user,
-#                                      review_request=self,
-#                                      changedesc=None)
-
     def increment_ship_it(self):
         """Atomicly increments the ship-it count on the review request."""
 
