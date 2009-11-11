@@ -6,15 +6,7 @@
 <script type="text/javascript">
     $(document).ready(function() {
     $("#upload-diff-link").click(function() {
-      $("<div/>")
-        .formDlg({
-          title: "{% trans "Upload Diff" %}",
-          confirmLabel: "{% trans "Upload" %}",
-          dataStoreObject: gReviewRequest.createDiff(),
-          width: "60em",
-          upload: true,
-          fields: {% form_dialog_fields upload_diff_form %}
-        });
+      gReviewRequest.addDiffFromBranch();
 
       return false;
     });

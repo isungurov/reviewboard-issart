@@ -7,13 +7,13 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
-
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import get_object_or_none
 from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
@@ -1324,6 +1324,24 @@ def new_diff(request, review_request_id):
     # E-mail gets sent when the draft is saved.
 
     return WebAPIResponse(request, {'diffset_id': diffset.id})
+
+
+@webapi_login_required
+def new_diff_from_branch(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_mutable_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    scm_tool = review_request.repository.get_scmtool()
+
+    diff_content = scm_tool.get_branch_diff(review_request.branch)
+    diff_file = SimpleUploadedFile("console", diff_content)
+
+    request.method = 'POST'
+    request.FILES['path'] = diff_file
+
+    return new_diff(request,review_request_id=review_request_id)
 
 
 @webapi_login_required

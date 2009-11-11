@@ -234,6 +234,14 @@ $.extend(RB.ReviewRequest.prototype, {
         return new RB.Diff(this, revision, interdiff_revision);
     },
 
+    addDiffFromBranch: function(options) {
+        options = $.extend(true, {}, options);
+
+        this._apiCall({
+            path: "/diff/branch/"
+        });
+    },
+
     createReview: function(review_id) {
         if (review_id == undefined) {
             if (this.draft_review == null) {
