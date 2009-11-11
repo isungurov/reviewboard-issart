@@ -22,6 +22,8 @@ def get_version_string():
         else:
             version += ' %s %s' % (VERSION[4], VERSION[5])
 
+    version += ' [issart-mod]'
+
     if not is_release():
         version += " (dev)"
 

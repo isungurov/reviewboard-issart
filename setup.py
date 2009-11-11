@@ -56,26 +56,20 @@ else:
     cmdclasses = {'install_data': install_data}
 
 
-PACKAGE_NAME = 'ReviewBoard'
-
-if is_release():
-    download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
-                   (PACKAGE_NAME, VERSION[0], VERSION[1])
-else:
-    download_url = 'http://downloads.reviewboard.org/nightlies/'
+PACKAGE_NAME = 'ReviewBoardIssart'
 
 
 # Build the reviewboard package.
 setup(name=PACKAGE_NAME,
       version=get_package_version(),
       license="MIT",
-      description="Review Board, a web-based code review tool",
-      url="http://www.reviewboard.org/",
-      download_url=download_url,
+      description="Review Board, a web-based code review tool (with ISS Art modifications)",
+      url="http://github.com/isungurov/reviewboard/",
+      download_url=None,
       author="The Review Board Project",
       author_email="reviewboard@googlegroups.com",
-      maintainer="Christian Hammond",
-      maintainer_email="chipx86@chipx86.com",
+      maintainer="Ivan Sungurov",
+      maintainer_email="isungurov@issart.com",
       packages=find_packages(),
       entry_points = {
           'console_scripts': [
