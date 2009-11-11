@@ -73,7 +73,8 @@ def build_review_request(review_request):
 
     m = log_message_re.search(log_entry.message)
     if not m:
-        raise ReviewRequestBuildException("Invalid log message: " + log_entry)
+        raise ReviewRequestBuildException(
+            'Log message does not match required pattern: ' + log_entry.message)
 
     ticket_key = m.group('ticket')
     issue = get_ticket(ticket_key)

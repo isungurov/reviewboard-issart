@@ -65,24 +65,33 @@ class NewReviewRequestFromBranchForm(forms.Form):
         empty_label=None,
         required=True)
 
-#    branch = forms.ModelChoiceField(
-#        label=_("Branch"),
-#        empty_label=None,
-#        required=True)
-
-    branch = forms.CharField(
+    branch = forms.RegexField(
+        regex=r'[\w_-]+(/[\w_-]+)?',
         label=_("Branch"),
         required=True,
         widget=forms.TextInput(attrs={'size': '35'}))
 
+    def clean_branch(self):
+        repository = self.cleaned_data['repository']
+        branch = self.cleaned_data['branch']
+        
+        branches = repository.get_scmtool().get_branches()
+        if branch not in branches:
+            raise forms.ValidationError('Branch does not exist')
+
+        return branch
+
     def create(self, user):
+        class SavedError(Exception):
+            """Empty exception class for when we already saved the error info"""
+            pass
+
         repository = self.cleaned_data['repository']
         branch = self.cleaned_data['branch']
 
-        review_request = ReviewRequest.objects.create(user, repository)
-        review_request.branch = branch
+        scm_tool = repository.get_scmtool()
 
-        diff_content = repository.get_scmtool().get_branch_diff(branch)
+        diff_content = scm_tool.get_branch_diff(branch)
         diff_file = SimpleUploadedFile("console", diff_content)
 
         diff_form = UploadDiffForm(repository,
@@ -91,30 +100,29 @@ class NewReviewRequestFromBranchForm(forms.Form):
         })
         diff_form.full_clean()
 
-        class SavedError(Exception):
-            """Empty exception class for when we already saved the error info"""
-            pass
+        review_request = ReviewRequest.objects.create(user, repository)
+        review_request.branch = branch
 
         try:
             diff_form.create(diff_file, None,
                              review_request.diffset_history)
             if 'path' in diff_form.errors:
-                self.errors['diff_path'] = diff_form.errors['path']
+                self.errors['branch'] = diff_form.errors['path']
                 raise SavedError
             elif 'base_diff_path' in diff_form.errors:
-                self.errors['base_diff_path'] = diff_form.errors['base_diff_path']
+                self.errors['branch'] = diff_form.errors['base_diff_path']
                 raise SavedError
         except SavedError:
             review_request.delete()
             raise
         except EmptyDiffError:
             review_request.delete()
-            self.errors['diff_path'] = forms.util.ErrorList([
-                'No diff found.'])
+            self.errors['branch'] = \
+                    forms.util.ErrorList(['Branch does not differ from trunk'])
             raise
         except Exception, e:
             review_request.delete()
-            self.errors['diff_path'] = forms.util.ErrorList([e])
+            self.errors['branch'] = forms.util.ErrorList([e])
             raise
 
         review_request.add_default_reviewers()

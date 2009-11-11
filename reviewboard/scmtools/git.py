@@ -91,6 +91,9 @@ class GitTool(SCMTool):
 
         return result
 
+    def get_branches(self):
+	return self.client.get_branches()
+
     @classmethod
     def check_repository(cls, path, username=None, password=None):
         """
@@ -417,3 +420,21 @@ class GitClient(object):
             raise SCMError(errmsg)
 
         return contents
+
+    def get_branches(self):
+        p = subprocess.Popen(
+            ['git', '--git-dir=%s' % self.git_dir, 'branch', '-a'],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
+        )
+        contents = p.stdout.read()
+        errmsg = p.stderr.read()
+        failure = p.wait()
+
+        if failure:
+            raise SCMError(errmsg)
+
+	branches = [b[2:] for b in contents.split('\n')]
+
+        return branches
