@@ -58,6 +58,12 @@ else:
 
 PACKAGE_NAME = 'ReviewBoardIssart'
 
+if is_release():
+    download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
+                   (PACKAGE_NAME, VERSION[0], VERSION[1])
+else:
+    download_url = 'http://downloads.reviewboard.org/nightlies/'
+
 
 # Build the reviewboard package.
 setup(name=PACKAGE_NAME,
@@ -65,7 +71,7 @@ setup(name=PACKAGE_NAME,
       license="MIT",
       description="Review Board, a web-based code review tool (with ISS Art modifications)",
       url="http://github.com/isungurov/reviewboard-issart/",
-      download_url=None,
+      download_url=download_url,
       author="The Review Board Project",
       author_email="reviewboard@googlegroups.com",
       maintainer="Ivan Sungurov",
