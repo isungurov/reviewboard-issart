@@ -250,8 +250,6 @@ function publishDraft() {
 	      "before this review request can be published.");
     } else if ($.trim($("#summary").html()) == "") {
         alert("The draft must have a summary.");
-    } else if ($.trim($("#description").html()) == "") {
-        alert("The draft must have a description.");
     } else {
         gReviewRequest.publish({
             buttons: gDraftBannerButtons
