@@ -1035,6 +1035,7 @@ def review_draft_save(request, review_request_id, publish=False):
 
     if publish:
         review.publish(user=request.user)
+        review_request.target_people.add(request.user)
     else:
         review.save()
 
