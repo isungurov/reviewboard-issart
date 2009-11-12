@@ -113,6 +113,12 @@ class ReviewRequestManager(ConcurrencyManager):
                 Q(target_groups__users=query_user)
         return self._query(extra_query=query, *args, **kwargs)
 
+    def with_bug_id(self, bug_id, *args, **kwargs):
+        query = Q(bugs_closed__iexact=bug_id) | \
+                Q(bugs_closed__startswith=bug_id + ',') | \
+                Q(bugs_closed__endswith=',' + bug_id)
+        return self._query(extra_query=query, *args, **kwargs)
+
     def from_user(self, username, *args, **kwargs):
         return self._query(extra_query=Q(submitter__username=username),
                            *args, **kwargs)

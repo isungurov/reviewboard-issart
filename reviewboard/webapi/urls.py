@@ -65,6 +65,10 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'count_review_requests',
      {'func': ReviewRequest.objects.from_user}),
 
+    (r'^reviewrequests/bug/(?P<bug_id>[A-Za-z0-9_-]+)/$',
+     'review_request_list',
+     {'func': ReviewRequest.objects.with_bug_id}),
+
     # Review requests
     (r'^reviewrequests/new/$', 'new_review_request'),
 
