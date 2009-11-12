@@ -106,6 +106,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'branch': o.branch,
                 'target_groups': o.target_groups.all(),
                 'target_people': o.target_people.all(),
+                'shipit_count': o.shipit_count
             }
         elif isinstance(o, ReviewRequestDraft):
             if o.bugs_closed != "":
