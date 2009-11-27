@@ -2,12 +2,12 @@ import re
 import xmlrpclib
 
 jira_server = 'http://issues.apdbox.com/rpc/xmlrpc'
-jira_username = 'isungurov'
-jira_password = '<shira>'
+jira_username = 'svn'
+jira_password = 'svn!!'
 
-log_message_re = re.compile(
-            r'\[(?P<ticket>[A-Z]+-(?P<ticket_number>\d+))\]\s*(?P<message>.*)$',
-            re.DOTALL)
+#log_message_re = re.compile(
+            #r'\[(?P<ticket>[A-Z]+-(?P<ticket_number>\d+))\]\s*(?P<message>.*)$',
+            #re.DOTALL)
 
 def get_ticket(ticket_key):
     s = xmlrpclib.ServerProxy(jira_server)
@@ -17,19 +17,20 @@ def get_ticket(ticket_key):
     return issue
 
 def build_review_request(review_request):
-    scm_tool = review_request.repository.get_scmtool()
+    #scm_tool = review_request.repository.get_scmtool()
 
-    logs = scm_tool.get_branch_log('origin/' + review_request.branch, limit=1)
-    if len(logs) == 0:
-        return
-    log_entry = logs[0]
+    #logs = scm_tool.get_branch_log('origin/' + review_request.branch, limit=1)
+    #if len(logs) == 0:
+        #return
+    #log_entry = logs[0]
 
-    m = log_message_re.search(log_entry.message)
-    if not m:
-        raise ReviewRequestBuildException(
-            'Log message does not match required pattern: ' + log_entry.message)
+    #m = log_message_re.search(log_entry.message)
+    #if not m:
+        #raise ReviewRequestBuildException(
+            #'Log message does not match required pattern: ' + log_entry.message)
 
-    ticket_key = m.group('ticket')
+    #ticket_key = m.group('ticket')
+    ticket_key = review_request.branch
     issue = get_ticket(ticket_key)
     review_request.bugs_closed = ticket_key
     review_request.summary = issue['summary']
