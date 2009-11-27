@@ -19,7 +19,7 @@ def get_ticket(ticket_key):
 def build_review_request(review_request):
     scm_tool = review_request.repository.get_scmtool()
 
-    logs = scm_tool.get_branch_log(review_request.branch, limit=1)
+    logs = scm_tool.get_branch_log('origin/' + review_request.branch, limit=1)
     if len(logs) == 0:
         return
     log_entry = logs[0]

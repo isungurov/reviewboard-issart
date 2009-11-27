@@ -74,9 +74,12 @@ class NewReviewRequestFromBranchForm(forms.Form):
     def clean_branch(self):
         repository = self.cleaned_data['repository']
         branch = self.cleaned_data['branch']
+
+        scm_tool = repository.get_scmtool()
+        scm_tool.update_cache()
         
-        branches = repository.get_scmtool().get_branches()
-        if branch not in branches:
+        branches = scm_tool.get_branches()
+        if 'origin/' + branch not in branches:
             raise forms.ValidationError('Branch does not exist')
 
         return branch
@@ -91,7 +94,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
 
         scm_tool = repository.get_scmtool()
 
-        diff_content = scm_tool.get_branch_diff(branch)
+        diff_content = scm_tool.get_branch_diff('origin/' + branch)
         diff_file = SimpleUploadedFile("console", diff_content)
 
         diff_form = UploadDiffForm(repository,

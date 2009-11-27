@@ -92,7 +92,12 @@ class GitTool(SCMTool):
         return result
 
     def get_branches(self):
-	return self.client.get_branches()
+        return self.client.get_branches()
+
+    def update_cache(self):
+        self.client.fetch()
+        #self.client.checkout('master')
+        self.client.pull('origin', 'master')
 
     @classmethod
     def check_repository(cls, path, username=None, password=None):
@@ -217,7 +222,7 @@ class GitClient(object):
         r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
         r'(?P<path>.*)')
 
-    def __init__(self, path, raw_file_url=None):
+    def __init__(self, raw_file_url, path):
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
@@ -362,20 +367,7 @@ class GitClient(object):
         return "file://" + path
 
     def diff(self, from_rev, to_rev):
-        p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.git_dir, 'diff',
-                '..'.join((str(from_rev), str(to_rev)))],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
-
-        if failure:
-            raise SCMError(errmsg)
-
+        contents = self.run_git('diff', '..'.join((str(from_rev), str(to_rev))))
         return contents
 
     log_pattern = re.compile(
@@ -383,58 +375,53 @@ class GitClient(object):
             re.DOTALL)
 
     def log(self, from_rev, to_rev, limit=None):
-        cmd = ['git', '--git-dir=%s' % self.git_dir, 'log',
-                '--pretty=format:"%H%n%an%n%s%b@@@"']
+        args = ['log', '--pretty=format:"%H%n%an%n%s%b@@@"']
         if limit:
-            cmd.append('-' + str(limit))
+            args.append('-' + str(limit))
 
-        cmd.append('..'.join((str(from_rev), str(to_rev))))
-
-        p = subprocess.Popen(cmd,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
-
-        if failure:
-            raise SCMError(errmsg)
+        args.append('..'.join((str(from_rev), str(to_rev))))
+        contents = self.run_git(*args)
 
         return contents
 
     def get_changed_filenames(self, from_rev, to_rev):
-        p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.git_dir, 'diff', '--name-only',
-                '..'.join((str(from_rev), str(to_rev)))],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
-
-        if failure:
-            raise SCMError(errmsg)
-
+        contents = self.run_git('diff', '--name-only', '..'.join((str(from_rev), str(to_rev))))
         return contents
 
     def get_branches(self):
+        contents = self.run_git('branch', '-a')
+        branches = [b[2:] for b in contents.split('\n')]
+
+        return branches
+    
+    def pull(self, remote, branch):
+        self.run_git('pull', remote, branch)
+
+    def fetch(self):
+        self.run_git('fetch')
+
+    def checkout(self, branch):
+        self.run_git('checkout', branch)
+
+    def run_git(self, *args):
+        git_args = ['git', '--git-dir=%s' % self.git_dir]
+        for a in args:
+            git_args.append(a)
+
         p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.git_dir, 'branch', '-a'],
-            stderr=subprocess.PIPE,
+            git_args,
             stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
             close_fds=(os.name != 'nt')
         )
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
+
+        (content, errmsg) = p.communicate()
+
         failure = p.wait()
 
         if failure:
             raise SCMError(errmsg)
 
-	branches = [b[2:] for b in contents.split('\n')]
-
-        return branches
+        return content
+    
