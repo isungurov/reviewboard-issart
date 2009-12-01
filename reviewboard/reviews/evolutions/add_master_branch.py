@@ -3,5 +3,5 @@ from django.db import models
 
 
 MUTATIONS = [
-    AddField('ReviewRequest', 'master_branch', models.CharField, max_length=300, blank=True, initial='')
+    AddField('ReviewRequest', 'master_branch', models.CharField, max_length=300, initial='')
 ]
