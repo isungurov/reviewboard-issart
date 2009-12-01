@@ -3,6 +3,5 @@ from django.db import models
 
 
 MUTATIONS = [
-    AddField('DefaultReviewer', 'repository', models.ManyToManyField,
-             related_model='scmtools.Repository')
+    AddField('ReviewRequest', 'master_branch', models.CharField, initial='')
 ]
