@@ -413,7 +413,8 @@ class GitClient(object):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
+            close_fds=(os.name != 'nt'),
+            cwd=self.git_dir
         )
 
         (content, errmsg) = p.communicate()
