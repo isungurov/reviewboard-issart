@@ -73,8 +73,8 @@ class GitTool(SCMTool):
     def get_parser(self, data):
         return GitDiffParser(data)
 
-    def get_branch_diff(self, branch):
-        return self.client.diff('master', branch)
+    def get_branches_diff(self, branch1, branch2):
+        return self.client.diff(branch1, branch2)
 
     def get_branch_log(self, branch, limit=None):
         content = self.client.log('master', branch, limit)

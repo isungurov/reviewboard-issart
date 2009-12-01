@@ -215,6 +215,7 @@ class ReviewRequest(models.Model):
                                         related_name="review_request",
                                         verbose_name=_('diff set history'),
                                         blank=True)
+    master_branch = models.CharField(_("master branch"), max_length=300, blank=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(
         Group,

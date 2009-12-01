@@ -65,21 +65,44 @@ class NewReviewRequestFromBranchForm(forms.Form):
         empty_label=None,
         required=True)
 
+    master_branch = forms.RegexField(
+        regex=r'[\w_-]+(/[\w_-]+)?',
+        label=_("Master branch"),
+        required=True,
+        widget=forms.TextInput(attrs={'size': '35'}))
+
     branch = forms.RegexField(
         regex=r'[\w_-]+(/[\w_-]+)?',
         label=_("Branch"),
         required=True,
         widget=forms.TextInput(attrs={'size': '35'}))
 
-    def clean_branch(self):
-        repository = self.cleaned_data['repository']
-        branch = self.cleaned_data['branch']
+    branches = None
 
-        scm_tool = repository.get_scmtool()
-        scm_tool.update_cache()
+    def load_branches(self):
+        repository = self.cleaned_data['repository']
+        if not self.branches:
+            scm_tool = repository.get_scmtool()
+            scm_tool.update_cache()
+            self.branches = scm_tool.get_branches()
+
+    def branch_exists(self, branch):
+        return 'origin/' + branch not in self.branches or 'remotes/origin/' + branch not in self.branches
+
+    def clean_master_branch(self):
+        self.load_branches()
+        master_branch = self.cleaned_data['master_branch']
+
+        if not self.branch_exists(master_branch):
+            raise forms.ValidationError('Master branch does not exist')
+
+        return master_branch
+
+    def clean_branch(self):
+        self.load_branches()
+        branch = self.cleaned_data['branch']
         
-        branches = scm_tool.get_branches()
-        if 'origin/' + branch not in branches:
+        if not self.branch_exists(branch):
             raise forms.ValidationError('Branch does not exist')
 
         return branch
@@ -90,11 +113,12 @@ class NewReviewRequestFromBranchForm(forms.Form):
             pass
 
         repository = self.cleaned_data['repository']
+        master_branch = self.cleaned_data['master_branch']
         branch = self.cleaned_data['branch']
 
         scm_tool = repository.get_scmtool()
 
-        diff_content = scm_tool.get_branch_diff('origin/' + branch)
+        diff_content = scm_tool.get_branches_diff('origin/' + master_branch, 'origin/' + branch)
         diff_file = SimpleUploadedFile("console", diff_content)
 
         diff_form = UploadDiffForm(repository,
@@ -104,6 +128,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
         diff_form.full_clean()
 
         review_request = ReviewRequest.objects.create(user, repository)
+        review_request.master_branch = master_branch
         review_request.branch = branch
 
         try:
