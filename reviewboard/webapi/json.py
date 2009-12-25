@@ -1,5 +1,6 @@
 from datetime import datetime
-import os.path
+import logging
+import os
 import re
 
 from django.conf import settings
@@ -29,9 +30,9 @@ from djblets.webapi.errors import WebAPIError, \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
-from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
+from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
-from reviewboard.reviews.forms import UploadScreenshotForm
+from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
@@ -1257,7 +1258,7 @@ def new_diff(request, review_request_id):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
     form_data = request.POST.copy()
-    form = UploadDiffForm(review_request.repository, form_data, request.FILES)
+    form = UploadDiffForm(review_request, form_data, request.FILES)
 
     if not form.is_valid():
         return WebAPIResponseFormError(request, form)
@@ -1265,19 +1266,6 @@ def new_diff(request, review_request_id):
     try:
         diffset = form.create(request.FILES['path'],
                               request.FILES.get('parent_diff_path'))
-
-        # Set the initial revision to be one newer than the most recent
-        # public revision, so we can reference it in the diff viewer.
-        #
-        # TODO: It would be nice to later consolidate this with the logic in
-        #       DiffSet.save.
-        public_diffsets = review_request.diffset_history.diffsets
-
-        if public_diffsets.count() > 0:
-            diffset.revision = public_diffsets.latest().revision + 1
-            diffset.save()
-        else:
-            diffset.revision = 1
     except FileNotFoundError, e:
         return WebAPIResponseError(request, REPO_FILE_NOT_FOUND, {
             'file': e.path,
@@ -1292,6 +1280,8 @@ def new_diff(request, review_request_id):
     except Exception, e:
         # This could be very wrong, but at least they'll see the error.
         # We probably want a new error type for this.
+        logging.error("Error uploading new diff: %s", e, exc_info=1)
+
         return WebAPIResponseError(request, INVALID_FORM_DATA, {
             'fields': {
                 'path': [str(e)]

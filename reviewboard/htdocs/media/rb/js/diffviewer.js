@@ -786,6 +786,11 @@ function findLineNumRow(table, linenum, startRow, endRow) {
         }
     }
 
+    if (startRow) {
+        // startRow already includes the offset, so we need to remove it
+        startRow -= row_offset;
+    }
+
     var low = startRow || 1;
     var high = Math.min(endRow || table.rows.length, table.rows.length);
 
@@ -1173,6 +1178,16 @@ $(document).ready(function() {
     }
 
     $.funcQueue("diff_files").start();
+
+    $("table.sidebyside tr td a.moved-to," +
+      "table.sidebyside tr td a.moved-from").click(function() {
+        var destination = $(this).attr("line");
+
+        return !scrollToAnchor(
+            $("td a[target=" + destination + "]", $(this).parents("table"))
+                .parent().siblings().andSelf()
+                    .effect("highlight", {}, 2000), false);
+    });
 });
 
 // vim: set et:

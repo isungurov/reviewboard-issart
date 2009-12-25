@@ -95,11 +95,12 @@ setup(name=PACKAGE_NAME,
       install_requires=[
           'Django>=1.1.1',
           'django_evolution',
-          'Djblets>=0.5.5',
-          'Pygments>=0.10',
+          'Djblets>=0.5.7',
+          'Pygments>=1.1.1',
           'flup',
           'paramiko',
-          'pytz'
+          'pytz',
+          'recaptcha_client',
       ],
       dependency_links = [
           "http://downloads.reviewboard.org/mirror/",

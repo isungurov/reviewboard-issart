@@ -30,7 +30,6 @@ from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
-from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
@@ -40,13 +39,16 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           ReviewRequestDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
+from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       NewReviewRequestFromBranchForm, \
+                                      UploadDiffForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        ReviewRequestDraft, Review, Group, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
+from reviewboard.scmtools.errors import ChangeSetError
 from reviewboard.scmtools.models import Repository
 
 
@@ -68,13 +70,7 @@ def new_review_request(request,
                     diff_file=request.FILES['diff_path'],
                     parent_diff_file=request.FILES.get('parent_diff_path'))
                 return HttpResponseRedirect(review_request.get_absolute_url())
-            except:
-                # XXX - OwnershipError or ChangeSetError?
-                #
-                # We're preventing an exception from being thrown here so that
-                # we can display the errors that form.create() sets in
-                # a much nicer way in the template. Otherwise, the user would
-                # see a useless backtrace.
+            except (OwnershipError, ChangeSetError):
                 pass
     else:
         form = NewReviewRequestForm()
@@ -250,7 +246,7 @@ def review_detail(request, review_request_id,
         'last_activity_time': last_activity_time,
         'review': review,
         'request': request,
-        'upload_diff_form': UploadDiffForm(repository),
+        'upload_diff_form': UploadDiffForm(review_request),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
         'PRE_CREATION': PRE_CREATION,
@@ -258,7 +254,6 @@ def review_detail(request, review_request_id,
     set_etag(response, etag)
 
     return response
-
 
 
 @login_required
@@ -468,7 +463,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
         'is_draft_diff': is_draft_diff,
         'is_draft_interdiff': is_draft_interdiff,
         'num_diffs': num_diffs,
-        'upload_diff_form': UploadDiffForm(repository),
+        'upload_diff_form': UploadDiffForm(review_request),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
         'last_activity_time': last_activity_time,
@@ -486,7 +481,8 @@ def raw_diff(request, review_request_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, request.user, revision)
 
-    data = ''.join([filediff.diff for filediff in diffset.files.all()])
+    tool = review_request.repository.get_scmtool()
+    data = tool.get_parser('').raw_diff(diffset)
 
     resp = HttpResponse(data, mimetype='text/x-patch')
 
@@ -797,7 +793,7 @@ def view_screenshot(request, review_request_id, screenshot_id,
         'screenshot': screenshot,
         'request': request,
         'comments': comments,
-        'upload_diff_form': UploadDiffForm(review_request.repository),
+        'upload_diff_form': UploadDiffForm(review_request),
         'upload_screenshot_form': UploadScreenshotForm(),
     }))
 

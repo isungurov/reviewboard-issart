@@ -284,12 +284,13 @@ class SVNTool(SCMTool):
 
         try:
             info = client.info2(path, recurse=False)
-            print info
+            logging.debug('SVN: Got repository information for %s: %s' %
+                          (path, info))
         except ClientError, e:
-            stre = str(e)
-            print e
+            logging.error('SVN: Failed to get repository information '
+                          'for %s: %s' % (path, e))
 
-            if 'callback_get_login required' in stre:
+            if 'callback_get_login required' in str(e):
                 raise SCMError("Authentication failed") # XXX
 
             if cert_data:
@@ -363,7 +364,7 @@ class SVNDiffParser(DiffParser):
     def parse_special_header(self, linenum, info):
         linenum = super(SVNDiffParser, self).parse_special_header(linenum, info)
 
-        if 'index' in info:
+        if 'index' in info and linenum != len(self.lines):
             if self.lines[linenum] == self.BINARY_STRING:
                 # Skip this and the svn:mime-type line.
                 linenum += 2

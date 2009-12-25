@@ -6,7 +6,7 @@
 {{error}}
 {% endif %}
 
-{% if file.changed_chunks or file.binary %}
+{% if file.changed_chunk_indexes or file.binary %}
 {%  if not standalone %}
 <table class="sidebyside{% if not file.interfilediff and file.newfile %} newfile{% endif %}" id="file{{file.filediff.id}}">
  <colgroup>
@@ -54,19 +54,38 @@
    <th>{{line.4}}</th>
    <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
 {%      else %}
-   <td><pre>{{ line.2|showextrawhitespace }}</pre></td>
+   <td>{% ifequal chunk.change 'insert' %}{% if line.8 %}
+    <a href="#" class="moved-from" line="{{line.8}}" target="{{line.4}}">{% trans "Moved from" %} {{line.8}}</a>
+    {% endif %}{% endifequal %}
+    <pre>{{line.2|showextrawhitespace}}</pre>
+   </td>
    <th>{{line.4}}</th>
-   <td><pre>{{ line.5|showextrawhitespace }}</pre></td>
+   <td>{% ifequal chunk.change 'delete' %}{% if line.8 %}
+    <a href="#" class="moved-to" line="{{line.8}}" target="{{line.1}}">{% trans "Moved to" %} {{line.8}}</a>
+    {% endif %}{% endifequal %}
+    <pre>{{line.5|showextrawhitespace}}</pre>
+   </td>
 {%      endifequal %}
   </tr>
 {%     endfor %}
  </tbody>
 {%    else %}
- <tbody class="collapsed" id="collapsed-chunk{{file.index}}.{{forloop.counter0}}">
+ <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{forloop.counter0}}">
   <tr>
    <th>...</th>
-   <td colspan="3">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{forloop.counter0}}', this); return false;">{% trans "Expand" %}</a>]</td>
+   <td colspan="3">{{chunk.numlines}} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{forloop.counter0}}', this); return false;">{% trans "Expand" %}</a>]
+   </td>
   </tr>
+{% if chunk.meta.headers %}
+  <tr>
+{%  ifequal chunk.meta.headers.0 chunk.meta.headers.1 %}
+   <td colspan="4"><pre>{{chunk.meta.headers.0}}</pre></td>
+{%  else %}
+   <td colspan="2"><pre>{{chunk.meta.headers.0}}</pre></td>
+   <td colspan="2"><pre>{{chunk.meta.headers.1}}</pre></td>
+{%  endifequal %}
+  </tr>
+{% endif %}
  </tbody>
 {%    endif %}
 {%   endfor %}{# chunks #}
