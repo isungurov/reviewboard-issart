@@ -31,10 +31,14 @@ def build_review_request(review_request):
 
     #ticket_key = m.group('ticket')
     ticket_key = review_request.branch
-    issue = get_ticket(ticket_key)
-    review_request.bugs_closed = ticket_key
-    review_request.summary = issue['summary']
-    review_request.description = issue.get('description','')
+
+    try:
+        issue = get_ticket(ticket_key)
+        review_request.summary = issue['summary']
+        review_request.description = issue.get('description','')
+        review_request.bugs_closed = ticket_key
+    except:
+        review_request.summary = ticket_key
 
     review_request.save()
 
