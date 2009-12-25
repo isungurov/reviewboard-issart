@@ -122,15 +122,15 @@ class NewReviewRequestFromBranchForm(forms.Form):
         diff_content = scm_tool.get_branches_diff('origin/' + master_branch, 'origin/' + branch)
         diff_file = SimpleUploadedFile("console", diff_content)
 
-        diff_form = UploadDiffForm(repository,
+        review_request = ReviewRequest.objects.create(user, repository)
+        review_request.master_branch = master_branch
+        review_request.branch = branch
+
+        diff_form = UploadDiffForm(review_request,
         files={
             'path': diff_file,
         })
         diff_form.full_clean()
-
-        review_request = ReviewRequest.objects.create(user, repository)
-        review_request.master_branch = master_branch
-        review_request.branch = branch
 
         try:
             diff_form.create(diff_file, None,
@@ -147,7 +147,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
         except EmptyDiffError:
             review_request.delete()
             self.errors['branch'] = \
-                    forms.util.ErrorList(['Branch does not differ from trunk'])
+                    forms.util.ErrorList(['Branch does not differ from master branch'])
             raise
         except Exception, e:
             review_request.delete()
