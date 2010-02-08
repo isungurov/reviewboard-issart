@@ -332,7 +332,7 @@ class GitClient(object):
         failure = p.wait()
 
         if failure:
-            if errmsg.startswith("fatal: Not a valid object name"):
+            if errmsg.find("fatal: Not a valid object name") > -1:
                 raise FileNotFoundError(commit)
             else:
                 raise SCMError(errmsg)
