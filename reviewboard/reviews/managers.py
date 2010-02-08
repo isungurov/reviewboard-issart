@@ -127,8 +127,13 @@ class ReviewRequestManager(ConcurrencyManager):
                 Q(bugs_closed__endswith=',' + bug_id)
         return self._query(extra_query=query, *args, **kwargs)
 
-    def from_user(self, username, *args, **kwargs):
-        return self._query(extra_query=Q(submitter__username=username),
+    def from_user(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
+        return self._query(extra_query=Q(submitter=query_user),
                            *args, **kwargs)
 
     def _query(self, user=None, status='P', with_counts=False,
