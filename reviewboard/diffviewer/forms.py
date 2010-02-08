@@ -60,7 +60,7 @@ class UploadDiffForm(forms.Form):
 
         # Parse the diff
         files = list(self._process_files(
-            diff_file, basedir, check_existance=(not parent_diff_file)))
+            diff_file, basedir, check_existance=False))
 
         if len(files) == 0:
             raise EmptyDiffError(_("The diff file is empty"))
