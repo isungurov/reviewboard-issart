@@ -144,7 +144,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
         except SavedError:
             review_request.delete()
             raise
-        except EmptyDiffError:
+        except diffviewer_forms.EmptyDiffError:
             review_request.delete()
             self.errors['branch'] = \
                     forms.util.ErrorList(['Branch does not differ from master branch'])
