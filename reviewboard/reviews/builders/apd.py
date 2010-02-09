@@ -30,7 +30,7 @@ def build_review_request(review_request):
             #'Log message does not match required pattern: ' + log_entry.message)
 
     #ticket_key = m.group('ticket')
-    ticket_key = review_request.branch
+    ticket_key = review_request.branch[len('origin/'):]
 
     try:
         issue = get_ticket(ticket_key)

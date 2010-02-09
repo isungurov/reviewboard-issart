@@ -87,24 +87,34 @@ class NewReviewRequestFromBranchForm(forms.Form):
             scm_tool.update_cache()
             self.branches = scm_tool.get_branches()
 
-    def branch_exists(self, branch):
-        return ('origin/' + branch in self.branches) or ('remotes/origin/' + branch in self.branches)
+    def process_ref(self, ref):
+        repository = self.cleaned_data['repository']
+        scm_tool = repository.get_scmtool()
+
+        branch = scm_tool.normalize_branch_name(ref)
+        print branch
+
+        if not self.branches:
+            self.branches = scm_tool.get_branches()
+        print self.branches
+
+        if branch in self.branches:
+            return branch
+
+        if scm_tool.is_valid_revision(ref):
+            return ref
+
+        raise forms.ValidationError('Invalid branch or revision')
 
     def clean_master_branch(self):
-        self.load_branches()
         master_branch = self.cleaned_data['master_branch']
-
-        if not self.branch_exists(master_branch):
-            raise forms.ValidationError('Master branch does not exist')
+        master_branch = self.process_ref(master_branch)
 
         return master_branch
 
     def clean_branch(self):
-        self.load_branches()
         branch = self.cleaned_data['branch']
-        
-        if not self.branch_exists(branch):
-            raise forms.ValidationError('Branch does not exist')
+        branch = self.process_ref(branch)
 
         return branch
 
@@ -120,7 +130,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
         scm_tool = repository.get_scmtool()
 
         try:
-            diff_content = scm_tool.get_branches_diff('origin/' + master_branch, 'origin/' + branch)
+            diff_content = scm_tool.get_branches_diff(master_branch, branch)
         except UnknownRevision:
             self.errors['branch'] = \
                     forms.util.ErrorList(['Master or target branch does not exist'])

@@ -4,6 +4,8 @@ import re
 import subprocess
 import urllib2
 import urlparse
+import time
+import signal
 
 # Python 2.5+ provides urllib2.quote, whereas Python 2.4 only
 # provides urllib.quote.
@@ -98,7 +100,24 @@ class GitTool(SCMTool):
     def update_cache(self):
         self.client.fetch()
         #self.client.checkout('master')
-        self.client.pull('origin', 'master')
+        #self.client.pull('origin', 'master')
+
+    def is_valid_revision(self, rev):
+        try:
+            print self.client.name_rev(rev)
+            is_valid = True
+        except SCMError, e:
+            if not str(e).find('Could not get commit') > -1:
+                raise
+            is_valid = False
+
+        return is_valid
+
+    def normalize_branch_name(self, branch):
+        if not branch.startswith('origin/'):
+            return 'origin/' + branch
+
+        return branch
 
     @classmethod
     def check_repository(cls, path, username=None, password=None):
@@ -219,6 +238,8 @@ class GitDiffParser(DiffParser):
 
 
 class GitClient(object):
+    # TODO: Move to configuration
+    PROCESS_TIMEOUT = 5 * 60
     schemeless_url_re = re.compile(
         r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
         r'(?P<path>.*)')
@@ -238,36 +259,20 @@ class GitClient(object):
         if url_parts[0] == 'file':
             self.git_dir = url_parts[2]
 
-            p = subprocess.Popen(
-                ['git', '--git-dir=%s' % self.git_dir, 'config',
-                     'core.repositoryformatversion'],
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                close_fds=(os.name != 'nt')
-            )
-            contents = p.stdout.read()
-            errmsg = p.stderr.read()
-            failure = p.wait()
+            ver = self.get_var('core.repositoryformatversion')
 
-            if failure:
+            if ver == None:
                 raise SCMError(_('Unable to retrieve information from local '
                                  'Git repository'))
 
     def is_valid_repository(self):
         """Checks if this is a valid Git repository."""
-        p = subprocess.Popen(
-            ['git', 'ls-remote', self.path, 'HEAD'],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
 
-        if failure:
+        try:
+            self.run_git('ls-remote', self.path, 'HEAD')
+        except SCMError, e:
             logging.error("Git: Failed to find valid repository %s: %s" %
-                          (self.path, errmsg))
+                          (self.path, str(e)))
             return False
 
         return True
@@ -321,21 +326,13 @@ class GitClient(object):
         """
         commit = self._resolve_head(revision, path)
 
-        p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.git_dir, 'cat-file', option, commit],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
-
-        if failure:
-            if errmsg.find("fatal: Not a valid object name") > -1:
+        try:
+            contents = self.run_git('cat-file', option, commit)
+        except SCMError, e:
+            if str(e).find("fatal: Not a valid object name") > -1:
                 raise FileNotFoundError(commit)
             else:
-                raise SCMError(errmsg)
+                raise
 
         return contents
 
@@ -396,7 +393,7 @@ class GitClient(object):
 
     def get_branches(self):
         contents = self.run_git('branch', '-a')
-        branches = [b[2:] for b in contents.split('\n')]
+        branches = [b[10:] if b.startswith('  remotes/') else b[2:] for b in contents.split('\n')]
 
         return branches
     
@@ -408,6 +405,20 @@ class GitClient(object):
 
     def checkout(self, branch):
         self.run_git('checkout', branch)
+
+    def name_rev(self, rev):
+        return self.run_git('name-rev', rev)
+
+    def get_var(self, varname):
+        try:
+            result = self.run_git('config', varname)
+        except SCMError, e:
+            if len(e) == 0:
+                result = None
+            else:
+                raise
+
+        return result
 
     def run_git(self, *args):
         git_args = ['git', '--git-dir=%s' % self.git_dir]
@@ -423,11 +434,17 @@ class GitClient(object):
             cwd=self.git_dir
         )
 
+        fin_time = time.time() + self.PROCESS_TIMEOUT
+        while p.poll() == None and fin_time > time.time():
+            time.sleep(1)
+
+        if fin_time < time.time():
+            os.kill(p.pid, signal.SIGKILL)
+            raise OSError("GIT process timeout has been reached")
+
         (content, errmsg) = p.communicate()
 
-        failure = p.wait()
-
-        if failure:
+        if p.returncode:
             if errmsg.find('unknown revision'):
                 raise UnknownRevision(errmsg)
             raise SCMError(errmsg)
