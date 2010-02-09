@@ -88,7 +88,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
             self.branches = scm_tool.get_branches()
 
     def branch_exists(self, branch):
-        return 'origin/' + branch not in self.branches or 'remotes/origin/' + branch not in self.branches
+        return ('origin/' + branch in self.branches) or ('remotes/origin/' + branch in self.branches)
 
     def clean_master_branch(self):
         self.load_branches()
