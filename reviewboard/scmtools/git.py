@@ -6,6 +6,8 @@ import urllib2
 import urlparse
 import time
 import signal
+import cStringIO
+
 
 # Python 2.5+ provides urllib2.quote, whereas Python 2.4 only
 # provides urllib.quote.
@@ -434,15 +436,21 @@ class GitClient(object):
             cwd=self.git_dir
         )
 
+        outstream = cStringIO.StringIO()
+
         fin_time = time.time() + self.PROCESS_TIMEOUT
         while p.poll() == None and fin_time > time.time():
+            outstream.write(p.stdout.read())
             time.sleep(1)
+
+        content = outstream.getvalue()
+        outstream.close()
 
         if fin_time < time.time():
             os.kill(p.pid, signal.SIGKILL)
             raise OSError("GIT process timeout has been reached")
 
-        (content, errmsg) = p.communicate()
+        errmsg = p.stderr.read()
 
         if p.returncode:
             if errmsg.find('unknown revision'):

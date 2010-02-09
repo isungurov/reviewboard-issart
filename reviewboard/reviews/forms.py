@@ -92,11 +92,9 @@ class NewReviewRequestFromBranchForm(forms.Form):
         scm_tool = repository.get_scmtool()
 
         branch = scm_tool.normalize_branch_name(ref)
-        print branch
 
         if not self.branches:
             self.branches = scm_tool.get_branches()
-        print self.branches
 
         if branch in self.branches:
             return branch
