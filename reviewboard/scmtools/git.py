@@ -21,7 +21,7 @@ from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, Log
 from reviewboard.scmtools.errors import FileNotFoundError, \
                                         RepositoryNotFoundError, \
-                                        SCMError
+                                        SCMError, UnknownRevision
 
 
 # Register these URI schemes so we can handle them properly.
@@ -428,6 +428,8 @@ class GitClient(object):
         failure = p.wait()
 
         if failure:
+            if errmsg.find('unknown revision'):
+                raise UnknownRevision(errmsg)
             raise SCMError(errmsg)
 
         return content

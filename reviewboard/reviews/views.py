@@ -39,7 +39,7 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           ReviewRequestDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
-from reviewboard.reviews.errors import OwnershipError
+from reviewboard.reviews.errors import OwnershipError, RequestFormError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       NewReviewRequestFromBranchForm, \
                                       UploadDiffForm, \
@@ -48,7 +48,7 @@ from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        ReviewRequestDraft, Review, Group, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
-from reviewboard.scmtools.errors import ChangeSetError
+from reviewboard.scmtools.errors import ChangeSetError, UnknownRevision
 from reviewboard.scmtools.models import Repository
 
 
@@ -91,11 +91,14 @@ def new_review_request_from_branch(request,
         form = NewReviewRequestFromBranchForm(request.POST)
 
         if form.is_valid():
-            review_request = form.create(request.user)
+            try:
+                review_request = form.create(request.user)
 
-            build_review_request(review_request)
+                build_review_request(review_request)
 
-            return HttpResponseRedirect(review_request.get_absolute_url())
+                return HttpResponseRedirect(review_request.get_absolute_url())
+            except RequestFormError:
+                pass
     else:
         form = NewReviewRequestFromBranchForm()
 

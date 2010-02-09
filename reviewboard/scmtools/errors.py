@@ -113,3 +113,8 @@ class UnknownHostKeyError(SSHKeyError):
                 'ip': socket.gethostbyname(hostname),
             }
         )
+
+class UnknownRevision(SCMError):
+    """An error indicating that a token does not represent a valid revision."""
+    def __init__(self, msg):
+        SCMError.__init__(self, msg)

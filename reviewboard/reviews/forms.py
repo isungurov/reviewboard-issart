@@ -9,12 +9,12 @@ from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.errors import OwnershipError
+from reviewboard.reviews.errors import OwnershipError, RequestFormError
 from reviewboard.reviews.models import DefaultReviewer, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
-                                        ChangeSetError
+                                        ChangeSetError, UnknownRevision
 from reviewboard.scmtools.models import Repository
 
 
@@ -119,7 +119,13 @@ class NewReviewRequestFromBranchForm(forms.Form):
 
         scm_tool = repository.get_scmtool()
 
-        diff_content = scm_tool.get_branches_diff('origin/' + master_branch, 'origin/' + branch)
+        try:
+            diff_content = scm_tool.get_branches_diff('origin/' + master_branch, 'origin/' + branch)
+        except UnknownRevision:
+            self.errors['branch'] = \
+                    forms.util.ErrorList(['Master or target branch does not exist'])
+            raise RequestFormError
+        
         diff_file = SimpleUploadedFile("console", diff_content)
 
         review_request = ReviewRequest.objects.create(user, repository)
@@ -148,7 +154,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
             review_request.delete()
             self.errors['branch'] = \
                     forms.util.ErrorList(['Branch does not differ from master branch'])
-            raise
+            raise RequestFormError
         except Exception, e:
             review_request.delete()
             self.errors['branch'] = forms.util.ErrorList([e])
