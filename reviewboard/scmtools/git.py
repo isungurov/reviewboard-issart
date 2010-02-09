@@ -100,7 +100,8 @@ class GitTool(SCMTool):
         return self.client.get_branches()
 
     def update_cache(self):
-        self.client.fetch()
+        pass
+        #self.client.fetch()
         #self.client.checkout('master')
         #self.client.pull('origin', 'master')
 
