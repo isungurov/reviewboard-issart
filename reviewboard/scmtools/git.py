@@ -373,7 +373,7 @@ class GitClient(object):
         return "file://" + path
 
     def diff(self, from_rev, to_rev):
-        contents = self.run_git('diff', '..'.join((str(from_rev), str(to_rev))))
+        contents = self.run_git('diff', '--full-index', '..'.join((str(from_rev), str(to_rev))))
         return contents
 
     log_pattern = re.compile(
@@ -428,6 +428,7 @@ class GitClient(object):
         for a in args:
             git_args.append(a)
 
+#        print git_args
         p = subprocess.Popen(
             git_args,
             stdout=subprocess.PIPE,
@@ -443,8 +444,10 @@ class GitClient(object):
         while p.poll() == None and fin_time > time.time():
             outstream.write(p.stdout.read())
             time.sleep(1)
+        outstream.write(p.stdout.read())
 
         content = outstream.getvalue()
+#        print '>>>', content, '<<<'
         outstream.close()
 
         if fin_time < time.time():
@@ -452,6 +455,7 @@ class GitClient(object):
             raise OSError("GIT process timeout has been reached")
 
         errmsg = p.stderr.read()
+#        print '!>>>', errmsg, '<<<!'
 
         if p.returncode:
             if errmsg.find('unknown revision'):
