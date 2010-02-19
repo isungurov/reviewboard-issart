@@ -82,10 +82,13 @@ class GitTool(SCMTool):
         return self.client.diff(branch1, branch2)
 
     def get_branch_log(self, branch, limit=None):
-        content = self.client.log('master', branch, limit)
+        return self.get_log('master', branch, limit)
+
+    def get_log(self, from_rev, to_rev, limit=None):
+        content = self.client.log(from_rev, to_rev, limit)
         entries = content.split('@@@')[:-1]
         p = self.client.log_pattern
-        
+
         result = [Log(p.search(e).groupdict()) for e in entries]
 
         return result

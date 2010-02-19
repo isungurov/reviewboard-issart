@@ -127,6 +127,13 @@ class NewReviewRequestFromBranchForm(forms.Form):
 
         scm_tool = repository.get_scmtool()
 
+        not_merged_commits = scm_tool.get_log(branch, master_branch)
+        print not_merged_commits
+        if len(not_merged_commits) != 0:
+            self.errors['branch'] = \
+                forms.util.ErrorList(['Master branch contains not merged to branch commits'])
+            raise RequestFormError
+
         try:
             diff_content = scm_tool.get_branches_diff(master_branch, branch)
         except UnknownRevision:
