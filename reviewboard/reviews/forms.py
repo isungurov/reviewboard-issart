@@ -147,8 +147,7 @@ class NewReviewRequestFromBranchForm(forms.Form):
         diff_form.full_clean()
 
         try:
-            diff_form.create(diff_file, None,
-                             review_request.diffset_history)
+            diff_form.create(diff_file, None, attach_to_history=True)
             if 'path' in diff_form.errors:
                 self.errors['branch'] = diff_form.errors['path']
                 raise SavedError
