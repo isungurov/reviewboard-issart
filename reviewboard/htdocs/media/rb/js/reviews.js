@@ -1410,6 +1410,18 @@ $(document).ready(function() {
         return false;
     });
 
+    $("#assign-to-me-link").click(function() {
+        pendingReview.setDraftField({
+            buttons: $("input", gReviewBanner),
+            success: function() {
+                hideReviewBanner();
+                gReviewBanner.queue(function() {
+                    window.location = gReviewRequestPath;
+                });
+            }
+        });
+    });
+
     var pendingReview = gReviewRequest.createReview();
 
     /* Edit Review buttons. */
