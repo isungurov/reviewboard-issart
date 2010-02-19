@@ -262,12 +262,6 @@ class GitClient(object):
         if url_parts[0] == 'file':
             self.git_dir = url_parts[2]
 
-            ver = self.get_var('core.repositoryformatversion')
-
-            if ver == None:
-                raise SCMError(_('Unable to retrieve information from local '
-                                 'Git repository'))
-
     def is_valid_repository(self):
         """Checks if this is a valid Git repository."""
 
