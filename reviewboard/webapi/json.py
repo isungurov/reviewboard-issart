@@ -613,6 +613,31 @@ def review_request_close(request, review_request_id, type):
     return WebAPIResponse(request)
 
 @webapi_login_required
+def review_request_assign_to_me(request, review_request_id):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    has_permission = False
+    for group in review_request.target_groups.all():
+        if request.user in group.users.all():
+            has_permission = True
+            break
+
+    if not has_permission:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    draft = ReviewRequestDraft.create(review_request)
+
+    _set_draft_field_data(draft, 'target_people', str(request.user))
+
+    draft.publish(user=request.user)
+    draft.delete()
+
+    return WebAPIResponse(request)
+
+@webapi_login_required
 def review_request_update_changenum(request, review_request_id, changenum):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
@@ -1037,6 +1062,7 @@ def review_draft_save(request, review_request_id, publish=False):
 
     if publish:
         review.publish(user=request.user)
+        review_request.target_people.clear()
         review_request.target_people.add(request.user)
     else:
         review.save()

@@ -284,6 +284,13 @@ $.extend(RB.ReviewRequest.prototype, {
             buttons: options.buttons
         });
     },
+
+    assignToMe: function(options) {
+        this._apiCall({
+            path: "/assign/",
+            buttons: options.buttons
+        });
+    },
     
     discardDraft: function(options) {
         options = $.extend(true, {}, options);

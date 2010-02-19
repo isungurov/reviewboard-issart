@@ -1411,15 +1411,11 @@ $(document).ready(function() {
     });
 
     $("#assign-to-me-link").click(function() {
-        pendingReview.setDraftField({
-            buttons: $("input", gReviewBanner),
-            success: function() {
-                hideReviewBanner();
-                gReviewBanner.queue(function() {
-                    window.location = gReviewRequestPath;
-                });
-            }
+        gReviewRequest.assignToMe({
+            buttons: gDraftBannerButtons
         });
+
+        return false;
     });
 
     var pendingReview = gReviewRequest.createReview();
