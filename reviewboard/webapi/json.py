@@ -1352,7 +1352,7 @@ def new_diff_from_branch(request, review_request_id):
 
     scm_tool = review_request.repository.get_scmtool()
 
-    diff_content = scm_tool.get_branch_diff(review_request.branch)
+    diff_content = scm_tool.get_branches_diff(review_request.master_branch, review_request.branch)
     diff_file = SimpleUploadedFile("console", diff_content)
 
     request.method = 'POST'
