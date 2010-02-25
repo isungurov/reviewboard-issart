@@ -10,7 +10,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import Q
-from django.http import Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden, HttpRequest
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
@@ -1355,10 +1355,16 @@ def new_diff_from_branch(request, review_request_id):
     diff_content = scm_tool.get_branches_diff(review_request.master_branch, review_request.branch)
     diff_file = SimpleUploadedFile("console", diff_content)
 
-    request.method = 'POST'
-    request.FILES['path'] = diff_file
+    new_request = HttpRequest()
+    new_request.COOKIES = request.COOKIES
+    new_request.META = request.META
+    new_request.FILES['path'] = diff_file
+    new_request.method = 'POST'
+    new_request.path = request.path
+    new_request.path_info = request.path_info
+    new_request.user = request.user
 
-    return new_diff(request,review_request_id=review_request_id)
+    return new_diff(new_request,review_request_id=review_request_id)
 
 
 @webapi_login_required
