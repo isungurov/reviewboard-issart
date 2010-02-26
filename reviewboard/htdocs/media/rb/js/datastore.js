@@ -245,7 +245,8 @@ $.extend(RB.ReviewRequest.prototype, {
                 if (rsp.stat == "ok") {
                     window.location.reload(true);
                 } else {
-                    $("#activity-indicator")
+                    var activityIndicator = $("#activity-indicator");
+                    activityIndicator
                     .addClass("error")
                     .text(rsp.err.msg)
                     .append(
