@@ -40,7 +40,8 @@ from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
 from reviewboard.scmtools.core import FileNotFoundError
 from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
-                                        InvalidChangeNumberError
+                                        InvalidChangeNumberError, \
+                                        UnmergedCommitsFound
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.decorators import webapi_check_login_required
 
@@ -73,6 +74,8 @@ NOTHING_TO_PUBLISH        = WebAPIError(211, "You attempted to publish a " +
                                              "have an associated draft.")
 EMPTY_CHANGESET           = WebAPIError(212, "The change number specified " +
                                              "represents an empty changeset")
+NOT_MERGED_COMMITS_FOUND  = WebAPIError(220, "Master branch contains not " +
+                                             "merged to branch commits")
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -1352,7 +1355,12 @@ def new_diff_from_branch(request, review_request_id):
 
     scm_tool = review_request.repository.get_scmtool()
 
-    diff_content = scm_tool.get_branches_diff(review_request.master_branch, review_request.branch)
+    try:
+        diff_content = scm_tool.get_branches_diff(
+                            review_request.master_branch, review_request.branch)
+    except UnmergedCommitsFound:
+        return WebAPIResponseError(request, NOT_MERGED_COMMITS_FOUND)
+
     diff_file = SimpleUploadedFile("console", diff_content)
 
     new_request = HttpRequest()

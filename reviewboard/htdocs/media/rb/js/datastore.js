@@ -235,10 +235,30 @@ $.extend(RB.ReviewRequest.prototype, {
     },
 
     addDiffFromBranch: function(options) {
+        var current = window.location;
         options = $.extend(true, {}, options);
 
         this._apiCall({
-            path: "/diff/branch/"
+            type: 'POST',
+            path: "/diff/branch/",
+            success: function(rsp) {
+                if (rsp.stat == "ok") {
+                    window.location.reload(true);
+                } else {
+                    $("#activity-indicator")
+                    .addClass("error")
+                    .text(rsp.err.msg)
+                    .append(
+                        $("<a/>")
+                            .text("Dismiss")
+                            .attr("href", "#")
+                            .click(function() {
+                                activityIndicator.fadeOut("fast");
+                                return false;
+                            })
+                    );
+                }
+            }
         });
     },
 

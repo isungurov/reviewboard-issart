@@ -25,7 +25,8 @@ from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, Log
 from reviewboard.scmtools.errors import FileNotFoundError, \
                                         RepositoryNotFoundError, \
-                                        SCMError, UnknownRevision
+                                        SCMError, UnknownRevision, \
+                                        UnmergedCommitsFound
 
 
 # Register these URI schemes so we can handle them properly.
@@ -79,6 +80,9 @@ class GitTool(SCMTool):
         return GitDiffParser(data)
 
     def get_branches_diff(self, branch1, branch2):
+        not_merged_commits = self.get_log(branch2, branch1)
+        if len(not_merged_commits) != 0:
+            raise UnmergedCommitsFound(not_merged_commits)
         return self.client.diff(branch1, branch2)
 
     def get_branch_log(self, branch, limit=None):

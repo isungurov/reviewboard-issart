@@ -27,6 +27,10 @@ class EmptyChangeSetError(ChangeSetError):
     def __init__(self, changenum):
         ChangeSetError.__init__(self, _('Changeset %s is empty') % changenum)
 
+class UnmergedCommitsFound(SCMError):
+    def __init__(self, commits):
+        self.commits = commits
+        SCMError.__init__(self, _('Unmerged commits found: ' + repr(commits)))
 
 class FileNotFoundError(SCMError):
     def __init__(self, path, revision=None, detail=None):
