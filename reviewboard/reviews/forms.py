@@ -14,7 +14,8 @@ from reviewboard.reviews.models import DefaultReviewer, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
-                                        ChangeSetError, UnknownRevision
+                                        ChangeSetError, UnknownRevision, \
+                                        UnmergedCommitsFound
 from reviewboard.scmtools.models import Repository
 
 
