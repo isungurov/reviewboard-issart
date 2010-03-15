@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import re
@@ -44,6 +45,8 @@ class GitTool(SCMTool):
     dependencies = {
         'executables': ['git']
     }
+    last_update = datetime.datetime.fromordinal(1)
+    UPDATE_INTERVAL = datetime.timedelta(seconds=5)
 
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
@@ -80,6 +83,7 @@ class GitTool(SCMTool):
         return GitDiffParser(data)
 
     def get_branches_diff(self, branch1, branch2):
+        self.update_cache()
         not_merged_commits = self.get_log(branch2, branch1)
         if len(not_merged_commits) != 0:
             raise UnmergedCommitsFound(not_merged_commits)
@@ -107,10 +111,10 @@ class GitTool(SCMTool):
         return self.client.get_branches()
 
     def update_cache(self):
-        pass
-        #self.client.fetch()
-        #self.client.checkout('master')
-        #self.client.pull('origin', 'master')
+        now = datetime.datetime.now()
+        if (now - self.last_update) >= self.UPDATE_INTERVAL:
+            self.last_update = now
+            self.client.fetch()
 
     def is_valid_revision(self, rev):
         try:
