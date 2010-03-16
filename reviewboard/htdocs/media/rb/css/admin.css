@@ -23,12 +23,23 @@ ul.actionlist li {
     list-style-type: none;
 }
 
+#logo {
+  padding: 0.5em;
+  position: absolute;
+}
+
+#branding h1 {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  margin-left: 3.5em;
+}
+
 #admin-nav, #admin-subnav {
   background-color: #557ab1;
   float: left;
   list-style: none;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 10px 0 5.5em;
   width: 100%;
 }
 
