@@ -132,10 +132,6 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         recipients.add(get_email_address_for_user(u))
         to_field.add(get_email_address_for_user(u))
 
-    for group in review_request.target_groups.all():
-        for address in get_email_addresses_for_group(group):
-            recipients.add(address)
-
     for profile in review_request.starred_by.all():
         if profile.user.is_active:
             recipients.add(get_email_address_for_user(profile.user))
@@ -242,6 +238,10 @@ def mail_review_request(user, review_request, changedesc=None):
         extra_recipients = harvest_people_from_review_request(review_request)
     else:
         extra_recipients = None
+
+    for group in review_request.target_groups.all():
+        for address in get_email_addresses_for_group(group):
+            extra_recipients.add(address)
 
     extra_context = {}
 
