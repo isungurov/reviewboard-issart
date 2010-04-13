@@ -200,13 +200,13 @@ class GitDiffParser(DiffParser):
             file = File()
             file.data = self.lines[i] + "\n"
             file.binary = False
-            diffLine = self.lines[i].split()
-            try:
-                # Need to remove the "a/" and "b/" prefix
-                remPrefix = re.compile("^[a|b]/");
-                file.origFile = remPrefix.sub("", diffLine[-2])
-                file.newFile = remPrefix.sub("", diffLine[-1])
-            except ValueError:
+
+            headerPattern = re.compile(r'^diff --git a/(.+) b/(.+)$')
+            headerMatch = headerPattern.match(self.lines[i])
+            if headerMatch:
+                file.origFile = headerMatch.group(1)
+                file.newFile = headerMatch.group(2)
+            else:
                 raise DiffParserError(
                     "The diff file is missing revision information",
                     i)
