@@ -138,7 +138,9 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     if extra_recipients:
         for recipient in extra_recipients:
-            if recipient.is_active:
+            if type(recipient) is str:
+                recipients.add(recipient)
+            elif recipient.is_active:
                 recipients.add(get_email_address_for_user(recipient))
 
     siteconfig = current_site.config.get()
@@ -237,10 +239,11 @@ def mail_review_request(user, review_request, changedesc=None):
         reply_message_id = review_request.email_message_id
         extra_recipients = harvest_people_from_review_request(review_request)
     else:
-        extra_recipients = set()
+        extra_recipients = None
 
     for group in review_request.target_groups.all():
-        extra_recipients.add(group)
+        for address in get_email_addresses_for_group(group):
+            extra_recipients.add(address)
 
     extra_context = {}
 
