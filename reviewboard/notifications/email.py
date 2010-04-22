@@ -239,7 +239,7 @@ def mail_review_request(user, review_request, changedesc=None):
         reply_message_id = review_request.email_message_id
         extra_recipients = harvest_people_from_review_request(review_request)
     else:
-        extra_recipients = None
+        extra_recipients = set()
 
     for group in review_request.target_groups.all():
         for address in get_email_addresses_for_group(group):
