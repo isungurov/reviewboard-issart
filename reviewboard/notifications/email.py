@@ -138,7 +138,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     if extra_recipients:
         for recipient in extra_recipients:
-            if type(recipient) is basestring:
+            if isinstance(recipient, basestring):
                 recipients.add(recipient)
             elif recipient.is_active:
                 recipients.add(get_email_address_for_user(recipient))
