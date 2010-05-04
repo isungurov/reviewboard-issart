@@ -1,8 +1,7 @@
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
-from djblets.webapi.core import WebAPIResponse, WebAPIResponseError
+from djblets.webapi.core import WebAPIResponse, WebAPIResponseError, BasicAPIEncoder
 from djblets.webapi.decorators import webapi_login_required
-from djblets.webapi.encoders import BasicAPIEncoder
 
 
 @simple_decorator
