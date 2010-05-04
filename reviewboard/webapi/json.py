@@ -507,7 +507,7 @@ def review_request_assign_to_me(request, review_request_id):
 
     draft = ReviewRequestDraft.create(review_request)
 
-    _set_draft_field_data(draft, 'target_people', str(request.user))
+    draft.target_people.add(request.user)
 
     draft.publish(user=request.user)
     draft.delete()
@@ -962,7 +962,6 @@ def review_draft_save(request, review_request_id, publish=False,
 
     if publish:
         review.publish(user=request.user)
-        review_request.target_people.clear()
         review_request.target_people.add(request.user)
     else:
         review.save()
