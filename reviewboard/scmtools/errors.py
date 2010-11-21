@@ -32,6 +32,22 @@ class UnmergedCommitsFound(SCMError):
         self.commits = commits
         SCMError.__init__(self, _('Unmerged commits found: ' + repr(commits)))
 
+class InvalidRevisionFormatError(SCMError):
+    """Indicates that a revision isn't in a recognizable format."""
+    def __init__(self, path, revision, detail=None):
+        msg = "The revision '%s' for '%s' isn't in a valid format" % \
+              (revision, path)
+
+        if detail:
+            msg += ': ' + detail
+
+        SCMError.__init__(self, msg)
+
+        self.path = path
+        self.revision = revision
+        self.detail = detail
+
+
 class FileNotFoundError(SCMError):
     def __init__(self, path, revision=None, detail=None):
         from reviewboard.scmtools.core import HEAD

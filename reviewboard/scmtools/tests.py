@@ -1,7 +1,6 @@
 import imp
 import os
 import nose
-import unittest
 
 from django.test import TestCase as DjangoTestCase
 try:
@@ -14,6 +13,7 @@ from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
+from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
 
 
@@ -302,6 +302,28 @@ class SubversionTests(DjangoTestCase):
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('4')
+        file = self.tool.get_file(filename, rev)
+        patch(diff, file, filename)
+
+    def testUnterminatedKeywordDiff(self):
+        """Testing parsing SVN diff with unterminated keywords"""
+        diff = "Index: Makefile\n" \
+               "===========================================================" \
+               "========\n" \
+               "--- Makefile    (revision 4)\n" \
+               "+++ Makefile    (working copy)\n" \
+               "@@ -1,6 +1,7 @@\n" \
+               " # $Id$\n" \
+               " # $Id:\n" \
+               " # $Rev$\n" \
+               " # $Revision::     $\n" \
+               "+# foo\n" \
+               " include ../tools/Makefile.base-vars\n" \
+               " NAME = misc-docs\n" \
+               " OUTNAME = svn-misc-docs\n"
+
+        filename = 'trunk/doc/misc-docs/Makefile'
+        rev = Revision('5')
         file = self.tool.get_file(filename, rev)
         patch(diff, file, filename)
 
@@ -628,19 +650,30 @@ class MercurialTests(DjangoTestCase):
 
 
 class GitTests(DjangoTestCase):
-    """
-    Unit tests for Git
-    """
+    """Unit tests for Git."""
     fixtures = ['test_scmtools.json']
 
     def setUp(self):
-        repo_path = os.path.join(os.path.dirname(__file__),
-                                 'testdata', 'git_repo')
+        tool = Tool.objects.get(name='Git')
+
+        local_repo_path = os.path.join(os.path.dirname(__file__),
+                                       'testdata', 'git_repo')
+        remote_repo_path = 'git@github.com:reviewboard/reviewboard.git'
+        remote_repo_raw_url = 'http://github.com/api/v2/yaml/blob/show/' \
+                              'reviewboard/reviewboard/<revision>'
+
+
         self.repository = Repository(name='Git test repo',
-                                     path=repo_path,
-                                     tool=Tool.objects.get(name='Git'))
+                                     path=local_repo_path,
+                                     tool=tool)
+        self.remote_repository = Repository(name='Remote Git test repo',
+                                            path=remote_repo_path,
+                                            raw_file_url=remote_repo_raw_url,
+                                            tool=tool)
+
         try:
             self.tool = self.repository.get_scmtool()
+            self.remote_tool = self.remote_repository.get_scmtool()
         except ImportError:
             raise nose.SkipTest('git binary not found')
 
@@ -718,7 +751,7 @@ class GitTests(DjangoTestCase):
         """Testing parsing Git diff new file, no content"""
         diff = self._readFixture('git_newfile_nocontent.diff')
         files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(self.tool.get_parser(diff).parse()), 0)
+        self.assertEqual(len(files), 0)
 
     def testNewfileNoContentWithFollowingDiff(self):
         """Testing parsing Git diff new file, no content, with following"""
@@ -870,3 +903,15 @@ class GitTests(DjangoTestCase):
                           lambda: self.tool.get_file("hello", "0000000"))
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file("readme", "0000000"))
+
+    def testParseDiffRevisionWithRemoteAndShortSHA1Error(self):
+        """Testing GitTool.parse_diff_revision with remote files and short SHA1 error"""
+        self.assertRaises(
+            ShortSHA1Error,
+            lambda: self.remote_tool.parse_diff_revision('README', 'd7e96b3'))
+
+    def testGetFileWithRemoteAndShortSHA1Error(self):
+        """Testing GitTool.get_file with remote files and short SHA1 error"""
+        self.assertRaises(
+            ShortSHA1Error,
+            lambda: self.remote_tool.get_file('README', 'd7e96b3'))

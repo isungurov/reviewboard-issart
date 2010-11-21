@@ -112,6 +112,11 @@ class UploadDiffForm(forms.Form):
 
             dest_file = os.path.join(basedir, f.newFile).replace("\\", "/")
 
+            if f.deleted:
+                status = FileDiff.DELETED
+            else:
+                status = FileDiff.MODIFIED
+
             filediff = FileDiff(diffset=diffset,
                                 source_file=f.origFile,
                                 dest_file=dest_file,
@@ -119,7 +124,8 @@ class UploadDiffForm(forms.Form):
                                 dest_detail=f.newInfo,
                                 diff=f.data,
                                 parent_diff=parent_content,
-                                binary=f.binary)
+                                binary=f.binary,
+                                status=status)
             filediff.save()
 
         return diffset
@@ -135,12 +141,13 @@ class UploadDiffForm(forms.Form):
                 filename = os.path.join(basedir, f2).replace("\\", "/")
 
             # FIXME: this would be a good place to find permissions errors
-#            if (revision != PRE_CREATION and
-#                revision != UNKNOWN and
-#                not f.binary and
-#                (check_existance and
-#                 not tool.file_exists(filename, revision))):
-#                raise FileNotFoundError(filename, revision)
+            if (revision != PRE_CREATION and
+                revision != UNKNOWN and
+                not f.binary and
+                not f.deleted and
+                (check_existance and
+                 not tool.file_exists(filename, revision))):
+                raise FileNotFoundError(filename, revision)
 
             f.origFile = filename
             f.origInfo = revision

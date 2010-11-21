@@ -27,7 +27,8 @@ from reviewboard.scmtools.errors import EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 
-#the model for the summery only allows it to be 300 chars in length
+
+# The model for the review request summary only allows it to be 300 chars long
 MAX_SUMMARY_LENGTH = 300
 
 
@@ -71,7 +72,8 @@ class Group(models.Model):
     separate teams at a company or components of a project.
 
     Each group can have an e-mail address associated with it, sending
-    all review requests and replies to that address.
+    all review requests and replies to that address. If that e-mail address is
+    blank, e-mails are sent individually to each member of that group.
     """
     name = models.SlugField(_("name"), max_length=64, blank=False, unique=True)
     display_name = models.CharField(_("display name"), max_length=64)
@@ -201,7 +203,9 @@ class ReviewRequest(models.Model):
                                             null=True, db_index=True)
     repository = models.ForeignKey(Repository,
                                    related_name="review_requests",
-                                   verbose_name=_("repository"))
+                                   verbose_name=_("repository"),
+                                   null=True,
+                                   blank=True)
     email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
@@ -573,7 +577,8 @@ class ReviewRequestDraft(models.Model):
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
-                                blank=True, null=True)
+                                blank=True, null=True,
+                                related_name='review_request_draft')
     changedesc = models.ForeignKey(ChangeDescription,
                                    verbose_name=_('change description'),
                                    blank=True, null=True)

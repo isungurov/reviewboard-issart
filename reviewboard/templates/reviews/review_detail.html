@@ -14,7 +14,7 @@
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css?{{MEDIA_SERIAL}}" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css?{{MEDIA_SERIAL}}" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css?{{MEDIA_SERIAL}}" />
-{% if siteconfig.settings.diffviewer_show_trailing_whitespace %}
+{% if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
 <style type="text/css">
   .ew { background: #ee3434; }
 </style>
@@ -47,7 +47,6 @@
 <div class="main">
 {% include "reviews/review_request_box.html" %}
 </div>
-</ul>
 {% endbox %}
 
 {% for entry in entries %}
@@ -55,7 +54,7 @@
 <a name="review{{entry.review.id}}"></a>
 <div id="review{{entry.review.id}}">
 {%   if forloop.last %}
-<a name="last-review" />
+<a name="last-review"></a>
 {%   endif %}
 {%   box "review" %}
 <div class="main">
@@ -105,16 +104,16 @@
         </tr>
        </thead>
        <tbody>
-        <tr><td><pre>&nbsp;</pre></th></tr>{# header entry #}
+        <tr><td><pre>&nbsp;</pre></td></tr>{# header entry #}
 {% for i in comment.num_lines|default_if_none:1|range %}
-        <tr><td><pre>&nbsp;</pre></th></tr>
+        <tr><td><pre>&nbsp;</pre></td></tr>
 {% endfor %}
        </tbody>
       </table>
      </div>
     </dt>
     <dd>
-     <pre>{{comment.text|escape}}</pre>
+     <pre class="reviewtext">{{comment.text|escape}}</pre>
      {% reply_section entry.review comment "comment" "rc" %}
     </dd>
     <script type="text/javascript">

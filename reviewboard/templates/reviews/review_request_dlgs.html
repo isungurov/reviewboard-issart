@@ -4,12 +4,14 @@
 
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
 <script type="text/javascript">
-    $(document).ready(function() {
+  $(document).ready(function() {
+{%  if upload_diff_form %}
     $("#upload-diff-link").click(function() {
       gReviewRequest.addDiffFromBranch();
 
       return false;
     });
+{%  endif %}
 
     $("#upload-screenshot-link").click(function() {
       $("<div/>").formDlg({
@@ -20,7 +22,10 @@
         upload: true,
         fields: {% form_dialog_fields upload_screenshot_form %},
         success: function(rsp) {
-            $.screenshotThumbnail(rsp.screenshot);
+            if (!$("#screenshot-thumbnails").empty()) {
+                $.screenshotThumbnail(rsp.screenshot);
+            }
+
             gDraftBanner.show();
         }
       });

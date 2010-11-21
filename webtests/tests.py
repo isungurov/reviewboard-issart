@@ -2,12 +2,9 @@ from datetime import datetime
 import os
 import time
 
-from django.conf import settings
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import Permission, User
 from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.http import HttpRequest
 from djblets.testing import testcases
 
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
@@ -34,6 +31,7 @@ class SeleniumUnitTest(testcases.SeleniumUnitTest):
         super(SeleniumUnitTest, self).setUp()
 
         self.user = User.objects.get(username='grumpy')
+        self.user.get_profile()
         self.login()
 
     def login(self):
@@ -188,6 +186,57 @@ class DiffCommentTests(SeleniumUnitTest):
         self.assertEqual(comment.first_line, first_line)
         self.assertEqual(comment.last_line, last_line)
 
+    def test_multiline_comment(self):
+        """Testing diff comment creation with a multi-line comment."""
+        comment_text = 'This is my\ntest\ncomment'
+        first_line = 10
+        last_line = 12
+
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user)[0]
+        diffset = r.diffset_history.diffsets.all()[0]
+        file = diffset.files.all()[0]
+
+        self.selenium.open(reverse('view_diff', kwargs={
+            'review_request_id': r.id
+        }))
+        self.selenium.wait_for_page_to_load("6000")
+        self.wait_for_element_present('file%s' % file.id)
+
+        self.open_comment_box(file.id, first_line, last_line)
+
+        first = True
+
+        for text in comment_text.split('\n'):
+            if not first:
+                self.selenium.key_press('comment_text', '\\13')
+
+            self.selenium.type_keys('comment_text', text)
+            first = False
+
+        self.selenium.focus('comment_save')
+
+        self.selenium.click('comment_save')
+        self.wait_for_ajax_finish()
+
+        self.assertEqual(r.reviews.count(), 1)
+        review = r.reviews.latest()
+        self.assertFalse(review.public)
+        self.assertEqual(review.comments.count(), 1)
+        comment = review.comments.all()[0]
+        self.assertEqual(comment.text, comment_text)
+
+        # Make sure that the Edit Review form properly handles this.
+        # Bug 1636.
+        self.selenium.click('review-link')
+        self.wait_for_element_present('review-form')
+        self.assertTrue(self.selenium.is_element_present('css=.diff-comments'))
+        self.assertTrue(self.selenium.is_element_present(
+            'css=.diff-comments #diff-comment-%s' % comment.id))
+        self.wait_for_element_present('css=.diff-comments textarea')
+        self.assertEqual(self.selenium.get_value('css=.diff-comments textarea'),
+                         comment_text)
+
     def test_delete_comment(self):
         """Testing deleting draft diff comments"""
         comment_text = 'This is my test comment'
@@ -217,7 +266,7 @@ class DiffCommentTests(SeleniumUnitTest):
         self.wait_for_ajax_finish()
         time.sleep(0.25) # It will be animating, so wait.
 
-        self.assertEqual(r.reviews.count(), 1)
+        self.assertEqual(r.reviews.count(), 0)
 
     def open_comment_box(self, file_id, first_line, last_line):
         first_line_locator = self.build_line_locator(file_id, first_line)
@@ -486,6 +535,19 @@ class ReviewRequestTests(SeleniumUnitTest):
 
         self._click_star_on_review_requests_page(r)
         self.assertFalse(r in profile.starred_review_requests.all())
+
+    # This is a test for bug #1586
+    def test_linkified_text_for_non_editable_description(self):
+        """Testing linkified text in non-editable description"""
+        r = ReviewRequest.objects.filter(public=True, status='P')\
+            .exclude(submitter=self.user)[0]
+        r.description = "Testing linkified text\n\n/r/123"
+        r.save()
+        transaction.commit()
+
+        self.selenium.open(r.get_absolute_url())
+        self.assertTrue(self.selenium.is_element_present(
+            'css=#description a[href="/r/123"]'))
 
     def _edit_field(self, field, value, is_textarea=False,
                    field_suffix="-value-cell"):
@@ -784,7 +846,7 @@ class ReviewReplyTests(SeleniumUnitTest):
         self.assertEqual(reply.body_top, body_top)
         self.assertEqual(reply.body_bottom, body_bottom)
 
-    def test_reply_publish(self):
+    def test_reply_discard(self):
         """Testing discarding a reply to a review"""
         body_top = 'Reply to body top'
         body_bottom = 'Reply to body bottom'
